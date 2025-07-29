@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grow a Garden - Merchant Timer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      background: #f0f8ff;
+      color: #333;
+    }
+    h1 {
+      font-size: 2rem;
+    }
+    #timer {
+      font-size: 3rem;
+      margin-top: 20px;
+      color: #2d6a4f;
+    }
+    #status {
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌿 Grow a Garden – Merchant Timer</h1>
+  <div id="timer">Loading...</div>
+  <div id="status"></div>
+
+  <script>
+    // Merchant appears every 4 hours starting at 3:00 UTC (local time now)
+    const merchantHoursUTC = [3, 7, 11, 15, 19, 23];
+
+    function updateTimer() {
+      const now = new Date();
+      const localOffsetMinutes = now.getTimezoneOffset(); // in minutes
+      const localOffsetMs = localOffsetMinutes * 60 * 1000;
+
+      // Local time adjusted from UTC merchant spawn hours
+      const localMerchantHours = merchantHoursUTC.map(hour => {
+        const utcDate = new Date(Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          hour, 0, 0, 0
+        ));
+        return new Date(utcDate.getTime() - localOffsetMs); // Convert to local time
+      });
+
+      // Find the next spawn time (or current if active)
+      let nextSpawn = null;
+      let merchantActive = false;
+
+      for (let i = 0; i < localMerchantHours.length; i++) {
+        const spawnTime = localMerchantHours[i];
+        const endTime = new Date(spawnTime.getTime() + 30 * 60 * 1000); // +30 min
+
+        if (now < spawnTime) {
+          nextSpawn = spawnTime;
+          break;
+        } else if (now >= spawnTime && now < endTime) {
+          merchantActive = true;
+          nextSpawn = endTime;
+          break;
+        }
+      }
+
+      // If no future spawn found today, wrap to tomorrow
+      if (!nextSpawn) {
+        const spawnTimeTomorrow = new Date(localMerchantHours[0].getTime() + 24 * 60 * 60 * 1000);
+        nextSpawn = spawnTimeTomorrow;
+      }
+
+      const timeLeftMs = nextSpawn - now;
+      const minutes = String(Math.floor(timeLeftMs / 60000) % 60).padStart(2, '0');
+      const seconds = String(Math.floor(timeLeftMs / 1000) % 60).padStart(2, '0');
+
+      document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+      document.getElementById('status').textContent = merchantActive
+        ? "🧺 Merchant is HERE! Time left:"
+        : "Next Traveling Merchant arrives in:";
+    }
+
+    updateTimer();
+    setInterval(updateTimer, 1000);
+  </script>
+</body>
+</html>
